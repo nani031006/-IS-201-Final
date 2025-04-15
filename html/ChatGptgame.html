@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Google Snake Clone</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: #202124;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      height: 100vh;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    canvas {
+      border-radius: 16px;
+      background: #303134;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    }
+    #scoreboard, #countdown {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    #home-link {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 1.2rem;
+      color: #fbbc04;
+    }
+    .snake {
+      transition: transform 0.1s linear;
+    }
+  </style>
+</head>
+<body>
+  <a id="home-link" href="../index.html">Home</a>
+  <div id="scoreboard">Score: 0</div>
+  <div id="countdown">Starting in: 5</div>
+  <canvas id="game" width="400" height="400"></canvas>
+
+  <script>
+    // Always clear high score on load
+    localStorage.removeItem("highscore");
+
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const scoreboard = document.getElementById("scoreboard");
+    const countdownElem = document.getElementById("countdown");
+    const box = 20;
+    const rows = canvas.width / box;
+    const cols = canvas.height / box;
+
+    let snake, direction, score, speed, game, food;
+
+    function initGame() {
+      snake = [{ x: 9 * box, y: 9 * box }];
+      direction = "RIGHT";
+      score = 0;
+      speed = 100;
+      food = spawnFood();
+      scoreboard.textContent = `Score: ${score}`;
+      countdownElem.textContent = "";
+
+      if (game) clearInterval(game);
+      game = setInterval(draw, speed);
+    }
+
+    function spawnFood() {
+      let pos;
+      do {
+        pos = {
+          x: Math.floor(Math.random() * rows) * box,
+          y: Math.floor(Math.random() * cols) * box
+        };
+      } while (snake.some(seg => seg.x === pos.x && seg.y === pos.y));
+      return pos;
+    }
+
+    window.addEventListener("keydown", function(e) {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+        e.preventDefault();
+      }
+    });
+
+    document.addEventListener("keydown", e => {
+      if (e.key === "ArrowLeft" && direction !== "RIGHT") direction = "LEFT";
+      else if (e.key === "ArrowUp" && direction !== "DOWN") direction = "UP";
+      else if (e.key === "ArrowRight" && direction !== "LEFT") direction = "RIGHT";
+      else if (e.key === "ArrowDown" && direction !== "UP") direction = "DOWN";
+    });
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#fbbc04";
+      ctx.beginPath();
+      ctx.arc(food.x + box / 2, food.y + box / 2, box / 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      for (let i = 0; i < snake.length; i++) {
+        ctx.fillStyle = i === 0 ? "#34a853" : "#5bb974";
+        ctx.beginPath();
+        ctx.arc(snake[i].x + box / 2, snake[i].y + box / 2, box / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      let head = { ...snake[0] };
+      if (direction === "LEFT") head.x -= box;
+      if (direction === "RIGHT") head.x += box;
+      if (direction === "UP") head.y -= box;
+      if (direction === "DOWN") head.y += box;
+
+      if (
+        head.x < 0 || head.x >= canvas.width ||
+        head.y < 0 || head.y >= canvas.height ||
+        snake.some(seg => seg.x === head.x && seg.y === head.y)
+      ) {
+        clearInterval(game);
+        setTimeout(startCountdown, 1000);
+        return;
+      }
+
+      snake.unshift(head);
+
+      if (head.x === food.x && head.y === food.y) {
+        score++;
+        speed = Math.max(50, speed - 2);
+        scoreboard.textContent = `Score: ${score}`;
+        food = spawnFood();
+        clearInterval(game);
+        game = setInterval(draw, speed);
+      } else {
+        snake.pop();
+      }
+    }
+
+    function startCountdown() {
+      let count = 3;
+      countdownElem.textContent = `Game Over! Restarting in: ${count}`;
+      const interval = setInterval(() => {
+        count--;
+        countdownElem.textContent = `Game Over! Restarting in: ${count}`;
+        if (count === 0) {
+          clearInterval(interval);
+          initGame();
+        }
+      }, 1000);
+    }
+
+    function startGameCountdown() {
+      let count = 5;
+      countdownElem.textContent = `Starting in: ${count}`;
+      const interval = setInterval(() => {
+        count--;
+        countdownElem.textContent = `Starting in: ${count}`;
+        if (count === 0) {
+          clearInterval(interval);
+          initGame();
+        }
+      }, 1000);
+    }
+
+    startGameCountdown();
+  </script>
+</body>
+</html>
